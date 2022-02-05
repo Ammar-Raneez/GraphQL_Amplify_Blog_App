@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "serviceConfiguration": {
+    "apiName": "blogapi",
+    "serviceName": "AppSync",
+    "gqlSchemaPath": "D:\\Learning\\Learning Code\\AWS\\AWS AppSync\\Stephane Maarek Blog App\\amplify\\backend\\api\\blogapi\\schema.graphql",
+    "defaultAuthType": {
+      "mode": "API_KEY",
+      "expirationTime": 7
+    }
+  }
+}
