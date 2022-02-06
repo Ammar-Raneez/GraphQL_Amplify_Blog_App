@@ -1,3 +1,5 @@
+input AMPLIFY { globalAuthRule: AuthRule = { allow: public } }
+
 # @model creates a table in dynamodb
 
 type Post @model {
@@ -7,15 +9,15 @@ type Post @model {
   postTitle: String!
   postBody: String!
   createdAt: String!
-  comments: [Comment] @connection(name: "PostComments")     # relationship
-  likes: [Like] @connection(name: "PostLikes")
+  comments: [Comment] @hasMany     # relationship
+  likes: [Like] @hasMany
 }
 
 type Comment @model {
   id: ID!
   commentOwnerId: String!
   commentOwnerUsername: String!
-  post: Post @connection(name: "PostComments")
+  post: Post @belongsTo
   content: String!
   createdAt: String!
 }
@@ -25,5 +27,5 @@ type Like @model {
   numberLikes: Int!
   likeOwnerId: String!
   likeOwnerUsername: String!
-  post: Post @connection(name: "PostLikes")
+  post: Post @belongsTo
 }
