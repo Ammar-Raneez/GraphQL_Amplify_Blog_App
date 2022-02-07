@@ -9,7 +9,6 @@ function CommentPost({ comment }) {
         <time style={{ fontStyle: "italic" }}>
           {" "}
           {new Date(comment.createdAt).toDateString()}
-
         </time>
       </span>
       <p> {comment.content}</p>

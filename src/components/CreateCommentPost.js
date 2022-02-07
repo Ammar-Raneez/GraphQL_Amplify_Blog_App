@@ -1,16 +1,34 @@
-import React, { useState } from 'react';
+import { API, Auth, graphqlOperation } from 'aws-amplify';
+import React, { useEffect, useState } from 'react';
+import { createComment } from '../graphql/mutations';
 
 function CreateCommentPost({ postId }) {
   const [commentOwnerId, setCommentOwnerId] = useState('');
   const [content, setContent] = useState('');
   const [commentOwnerUsername, setCommentOwnerUsername] = useState('');
 
-  const handleAddComment = () => {
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const userInfo = await Auth.currentUserInfo();
+      setCommentOwnerId(userInfo.attributes.sub);
+      setCommentOwnerUsername(userInfo.username);
+    }
 
-  }
+    getCurrentUser()
+  }, []);
 
-  const handleChangeContent = () => {
+  const handleAddComment = async (event) => {
+    event.preventDefault();
+    const input = {
+      commentOwnerUsername,
+      commentOwnerId,
+      content,
+      postCommentsId: postId,
+      createdAt: new Date().toISOString()
+    };
 
+    await API.graphql(graphqlOperation(createComment, { input }));
+    setContent('');
   }
 
   return (
@@ -25,7 +43,7 @@ function CreateCommentPost({ postId }) {
           required
           placeholder="Add Your Comment..."
           value={content}
-          onChange={handleChangeContent} />
+          onChange={(event) => setContent(event.target.value)} />
         <input
           className="btn"
           type="submit"

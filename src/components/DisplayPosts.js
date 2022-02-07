@@ -2,7 +2,7 @@ import { API, Auth, graphqlOperation } from 'aws-amplify';
 import React, { useEffect, useState } from 'react';
 import { FaThumbsUp, FaSadTear } from 'react-icons/fa';
 import { listPosts } from '../graphql/queries';
-import { onCreatePost, onDeletePost, onUpdatePost } from '../graphql/subscriptions';
+import { onCreateComment, onCreatePost, onDeletePost, onUpdatePost } from '../graphql/subscriptions';
 import DeletePost from './DeletePost';
 import EditPost from './EditPost';
 import UsersWhoLikedPost from './UsersWhoLikedPost';
@@ -15,13 +15,11 @@ function DisplayPosts() {
   const [postLikedBy, setPostLikedBy] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [ownerId, setPostOwnerId] = useState('');
-  const [ownerUsername, setPostOwnerUsername] = useState('');
 
   useEffect(() => {
     const getCurrentUser = async () => {
       const userInfo = await Auth.currentUserInfo();
       setPostOwnerId(userInfo.attributes.sub);
-      setPostOwnerUsername(userInfo.username);
     }
 
     getCurrentUser()
@@ -62,10 +60,29 @@ function DisplayPosts() {
       }
     });
 
+    const createPostCommentListener = API.graphql(graphqlOperation(onCreateComment)).subscribe({
+      next: (commentData) => {
+        const createdComment = commentData.value.data.onCreateComment;
+        const postsCopy = [...posts];
+        for (let post of postsCopy) {
+          if (createdComment.post.id === post.id) {
+            if (!post.comments.items) {
+              post.comments.items = [];
+            }
+
+            post.comments.items.push(createdComment);
+          }
+        }
+
+        setPosts(postsCopy);
+      }
+    });
+
     const unsubscribe = () => {
       createPostListener.unsubscribe();
       deletePostListener.unsubscribe();
       updatePostListener.unsubscribe();
+      createPostCommentListener.unsubscribe();
     }
 
     return () => unsubscribe();
@@ -124,10 +141,10 @@ function DisplayPosts() {
         </span>
         <span>
           <CreateCommentPost postId={post.id} />
-          {/* {post.comments.items.length > 0 && <span style={{ fontSize: "19px", color: "gray" }}>
+          {post.comments?.items?.length > 0 && <span style={{ fontSize: "19px", color: "gray" }}>
             Comments: </span>}
-          {post.comments.items.map((comment, index) => (
-            <CommentPost key={index} comment={comment} />))} */}
+          {post.comments?.items?.map((comment, index) => (
+            <CommentPost key={index} comment={comment} />))}
         </span>
       </div>
     ))

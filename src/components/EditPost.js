@@ -33,14 +33,6 @@ function EditPost(props) {
     setShow(!show);
   }
 
-  const handleTitle = (event) => {
-    setPostTitle(event.target.value);
-  }
-
-  const handleBody = (event) => {
-    setPostBody(event.target.value);
-  }
-
   const handleModal = () => {
     setShow(!show);
     document.body.scrollTop = 0;
@@ -65,14 +57,14 @@ function EditPost(props) {
               type="text" placeholder="Title"
               name="postTitle"
               value={postTitle}
-              onChange={handleTitle}
+              onChange={(event) => setPostTitle(event.target.value)}
             />
             <input
               style={{ height: "150px", fontSize: "19px" }}
               type="text"
               name="postBody"
               value={postBody}
-              onChange={handleBody}
+              onChange={(event) => setPostBody(event.target.value)}
             />
             <button style={{ width: "50%" }}>Update Post</button>
           </form>
