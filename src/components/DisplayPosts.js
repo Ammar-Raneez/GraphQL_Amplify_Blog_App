@@ -2,7 +2,7 @@ import { API, Auth, graphqlOperation } from 'aws-amplify';
 import React, { useEffect, useState } from 'react';
 import { FaThumbsUp, FaSadTear } from 'react-icons/fa';
 import { listPosts } from '../graphql/queries';
-import { onCreatePost, onDeletePost } from '../graphql/subscriptions';
+import { onCreatePost, onDeletePost, onUpdatePost } from '../graphql/subscriptions';
 import DeletePost from './DeletePost';
 import EditPost from './EditPost';
 import UsersWhoLikedPost from './UsersWhoLikedPost';
@@ -53,9 +53,19 @@ function DisplayPosts() {
       }
     });
 
+    const updatePostListener = API.graphql(graphqlOperation(onUpdatePost)).subscribe({
+      next: (postData) => {
+        const updatedPost = postData.value.data.onDeletePost;
+        const index = posts?.findIndex((post) => post.id === updatedPost.id);
+        const updatedPosts = [...posts.slice(0, index), updatedPost, ...posts.slice(index + 1)];
+        setPosts(updatedPosts);
+      }
+    });
+
     const unsubscribe = () => {
       createPostListener.unsubscribe();
       deletePostListener.unsubscribe();
+      updatePostListener.unsubscribe();
     }
 
     return () => unsubscribe();
