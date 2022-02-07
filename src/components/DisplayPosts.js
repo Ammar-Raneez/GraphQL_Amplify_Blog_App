@@ -66,10 +66,6 @@ function DisplayPosts() {
         const postsCopy = [...posts];
         for (let post of postsCopy) {
           if (createdComment.post.id === post.id) {
-            if (!post.comments.items) {
-              post.comments.items = [];
-            }
-
             post.comments.items.push(createdComment);
           }
         }
