@@ -55,7 +55,7 @@ function DisplayPosts() {
 
     const updatePostListener = API.graphql(graphqlOperation(onUpdatePost)).subscribe({
       next: (postData) => {
-        const updatedPost = postData.value.data.onDeletePost;
+        const updatedPost = postData.value.data.onUpdatePost;
         const index = posts?.findIndex((post) => post.id === updatedPost.id);
         const updatedPosts = [...posts.slice(0, index), updatedPost, ...posts.slice(index + 1)];
         setPosts(updatedPosts);
