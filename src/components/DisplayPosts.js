@@ -1,8 +1,8 @@
-import { API, graphqlOperation } from 'aws-amplify';
+import { API, Auth, graphqlOperation } from 'aws-amplify';
 import React, { useEffect, useState } from 'react';
 import { FaThumbsUp, FaSadTear } from 'react-icons/fa';
 import { listPosts } from '../graphql/queries';
-import { onCreatePost } from '../graphql/subscriptions';
+import { onCreatePost, onDeletePost } from '../graphql/subscriptions';
 import DeletePost from './DeletePost';
 import EditPost from './EditPost';
 import UsersWhoLikedPost from './UsersWhoLikedPost';
@@ -14,27 +14,51 @@ function DisplayPosts() {
   const [isHovering, setIsHovering] = useState(false);
   const [postLikedBy, setPostLikedBy] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
-  const [ownerId, setOwnerId] = useState('');
-  const [ownerUsername, setOwnerUsername] = useState('');
+  const [ownerId, setPostOwnerId] = useState('');
+  const [ownerUsername, setPostOwnerUsername] = useState('');
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const userInfo = await Auth.currentUserInfo();
+      setPostOwnerId(userInfo.attributes.sub);
+      setPostOwnerUsername(userInfo.username);
+    }
+
+    getCurrentUser()
+  }, []);
 
   useEffect(() => {
     const getPosts = async () => {
       const result = await API.graphql(graphqlOperation(listPosts));
       setPosts(result.data.listPosts.items);
     }
-
-    const createPostListener = API.graphql(graphqlOperation(onCreatePost)).subscribe({
-        next: (postData) => {
-          const newPost = postData.value.data.onCreatePost;
-          const prevPosts = posts?.filter((post) => post.id !== newPost.id);
-          const updatedPosts = [...prevPosts, newPost];
-          setPosts(updatedPosts);
-        }
-      });
-
     getPosts();
+  }, []);
 
-    return () => createPostListener.unsubscribe();
+  useEffect(() => {
+    const createPostListener = API.graphql(graphqlOperation(onCreatePost)).subscribe({
+      next: (postData) => {
+        const newPost = postData.value.data.onCreatePost;
+        const prevPosts = posts?.filter((post) => post.id !== newPost.id);
+        const updatedPosts = [...prevPosts, newPost];
+        setPosts(updatedPosts);
+      }
+    });
+
+    const deletePostListener = API.graphql(graphqlOperation(onDeletePost)).subscribe({
+      next: (postData) => {
+        const deletedPost = postData.value.data.onDeletePost;
+        const updatedPosts = posts?.filter((post) => post.id !== deletedPost.id);
+        setPosts(updatedPosts);
+      }
+    });
+
+    const unsubscribe = () => {
+      createPostListener.unsubscribe();
+      deletePostListener.unsubscribe();
+    }
+
+    return () => unsubscribe();
   }, [posts]);
 
   const handleLike = (postId) => {

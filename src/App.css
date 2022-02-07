@@ -124,6 +124,7 @@ textarea {
   margin: .3rem;
   padding: 1rem;
   font-size: 1.2rem;
+  outline: none;
 }
 
 button {
@@ -137,6 +138,7 @@ button {
   font-size: 1rem;
   cursor: pointer;
   margin-top: 15px;
+  margin-right: 5px;
 }
 
 .users-liked {
