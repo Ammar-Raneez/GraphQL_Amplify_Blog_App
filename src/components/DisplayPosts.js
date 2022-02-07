@@ -2,6 +2,7 @@ import { API, graphqlOperation } from 'aws-amplify';
 import React, { useEffect, useState } from 'react';
 import { FaThumbsUp, FaSadTear } from 'react-icons/fa';
 import { listPosts } from '../graphql/queries';
+import { onCreatePost } from '../graphql/subscriptions';
 import DeletePost from './DeletePost';
 import EditPost from './EditPost';
 import UsersWhoLikedPost from './UsersWhoLikedPost';
@@ -19,12 +20,22 @@ function DisplayPosts() {
   useEffect(() => {
     const getPosts = async () => {
       const result = await API.graphql(graphqlOperation(listPosts));
-      console.log(result);
       setPosts(result.data.listPosts.items);
     }
 
+    const createPostListener = API.graphql(graphqlOperation(onCreatePost)).subscribe({
+        next: (postData) => {
+          const newPost = postData.value.data.onCreatePost;
+          const prevPosts = posts?.filter((post) => post.id !== newPost.id);
+          const updatedPosts = [...prevPosts, newPost];
+          setPosts(updatedPosts);
+        }
+      });
+
     getPosts();
-  }, []);
+
+    return () => createPostListener.unsubscribe();
+  }, [posts]);
 
   const handleLike = (postId) => {
 
