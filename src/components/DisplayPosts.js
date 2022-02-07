@@ -2,12 +2,19 @@ import { API, Auth, graphqlOperation } from 'aws-amplify';
 import React, { useEffect, useState } from 'react';
 import { FaThumbsUp, FaSadTear } from 'react-icons/fa';
 import { listPosts } from '../graphql/queries';
-import { onCreateComment, onCreatePost, onDeletePost, onUpdatePost } from '../graphql/subscriptions';
+import {
+  onCreateComment,
+  onCreatePost,
+  onDeletePost,
+  onUpdatePost,
+  onCreateLike
+} from '../graphql/subscriptions';
 import DeletePost from './DeletePost';
 import EditPost from './EditPost';
 import UsersWhoLikedPost from './UsersWhoLikedPost';
 import CreateCommentPost from './CreateCommentPost';
 import CommentPost from './CommentPost';
+import { createLike } from '../graphql/mutations';
 
 function DisplayPosts() {
   const [posts, setPosts] = useState([]);
@@ -15,11 +22,13 @@ function DisplayPosts() {
   const [postLikedBy, setPostLikedBy] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [ownerId, setPostOwnerId] = useState('');
+  const [ownerUsername, setPostOwnerUsername] = useState('');
 
   useEffect(() => {
     const getCurrentUser = async () => {
       const userInfo = await Auth.currentUserInfo();
       setPostOwnerId(userInfo.attributes.sub);
+      setPostOwnerUsername(userInfo.username);
     }
 
     getCurrentUser()
@@ -74,26 +83,88 @@ function DisplayPosts() {
       }
     });
 
+    const createPostLikeListener = API.graphql(graphqlOperation(onCreateLike)).subscribe({
+      next: (postData) => {
+        const createdLike = postData.value.data.onCreateLike;
+        const postsCopy = [...posts];
+        for (let post of postsCopy) {
+          if (createdLike.post.id === post.id) {
+            post.likes.items.push(createdLike);
+          }
+        }
+
+        setPosts(postsCopy);
+      }
+    });
+
     const unsubscribe = () => {
       createPostListener.unsubscribe();
       deletePostListener.unsubscribe();
       updatePostListener.unsubscribe();
       createPostCommentListener.unsubscribe();
+      createPostLikeListener.unsubscribe();
     }
 
     return () => unsubscribe();
   }, [posts]);
 
-  const handleLike = (postId) => {
+  const likedPost = (postId) => {
+    for (let post of posts) {
+      if (post.id === postId) {
+        // prevent owner liking own post
+        if (post.postOwnerId === ownerId) {
+          return true;
+        }
 
+        // prevent user liking multiple times
+        for (let like of post.likes.items) {
+          if (like.likeOwnerId === ownerId) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  const handleLike = async (postId) => {
+    if (likedPost(postId)) {
+      return setErrorMessage('Can\'t like your own post');
+    }
+
+    const input = {
+      numberLikes: 1,
+      likeOwnerId: ownerId,
+      likeOwnerUsername: ownerUsername,
+      postLikesId: postId
+    };
+
+    try {
+      await API.graphql(graphqlOperation(createLike, { input }));
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   const handleMouseHover = (postId) => {
+    setIsHovering(!isHovering);
+    const likes = [...postLikedBy];
 
+    for (let post of posts) {
+      if (post.id === postId) {
+        for (let like of post.likes.items) {
+          likes.push(like.likeOwnerUsername);
+        }
+      }
+
+      setPostLikedBy(likes);
+    }
   }
 
   const handleMouseHoverLeave = () => {
-
+    setIsHovering(!isHovering);
+    setPostLikedBy([]);
   }
 
   return (
@@ -118,19 +189,19 @@ function DisplayPosts() {
             && <EditPost {...post} />}
           <span>
             <p className="alert">{post.postOwnerId === ownerId && errorMessage}</p>
-            {/* <p onMouseEnter={() => handleMouseHover(post.id)}
+            <p onMouseEnter={() => handleMouseHover(post.id)}
               onMouseLeave={() => handleMouseHoverLeave()}
               onClick={() => handleLike(post.id)}
               style={{ color: (post.likes.items.length > 0) ? "blue" : "gray" }}
               className="like-button">
               <FaThumbsUp />
               {post.likes.items.length}
-            </p> */}
+            </p>
             {isHovering && (
               <div className="users-liked">
                 {postLikedBy.length === 0 ?
                   " Liked by No one " : "Liked by: "}
-                {postLikedBy.length === 0 ? <FaSadTear /> : <UsersWhoLikedPost data={postLikedBy} />}
+                {postLikedBy.length === 0 ? <FaSadTear /> : <UsersWhoLikedPost allUsers={postLikedBy} />}
               </div>
             )}
           </span>
