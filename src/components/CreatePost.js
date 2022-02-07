@@ -1,12 +1,22 @@
-import { API, graphqlOperation } from 'aws-amplify';
-import React, { useState } from 'react';
+import { API, Auth, graphqlOperation } from 'aws-amplify';
+import React, { useEffect, useState } from 'react';
 import { createPost } from '../graphql/mutations';
 
 function CreatePost() {
-  const [postOwnerId, setPostOwnerId] = useState('as');
-  const [postOwnerUsername, setPostOwnerUsername] = useState('d');
+  const [postOwnerId, setPostOwnerId] = useState('');
+  const [postOwnerUsername, setPostOwnerUsername] = useState('');
   const [postTitle, setPostTitle] = useState('');
   const [postBody, setPostBody] = useState('');
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const userInfo = await Auth.currentUserInfo();
+      setPostOwnerId(userInfo.attributes.sub);
+      setPostOwnerUsername(userInfo.username);
+    }
+
+    getCurrentUser()
+  }, []);
 
   const handleAddPost = async (event) => {
     event.preventDefault();
